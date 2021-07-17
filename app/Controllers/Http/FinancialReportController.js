@@ -13,7 +13,7 @@ class FinancialReportController {
       .where("status", true)
 
     if (data.company_id) {
-      contractQueryActives.where("company_id", data.company_id);
+      contractQueryActives.whereIn("company_id", data.company_id.split(','));
     }
 
     const actives = await contractQueryActives.fetch();
@@ -24,7 +24,7 @@ class FinancialReportController {
       .where("status", false)
 
     if (data.company_id) {
-      contractQueryInactives.where("company_id", data.company_id);
+      contractQueryInactives.whereIn("company_id", data.company_id.split(','));
     }
 
 

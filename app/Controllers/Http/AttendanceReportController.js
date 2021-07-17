@@ -7,7 +7,6 @@ class AttendanceReportController {
   async index({ request }) {
 
     const params = request.get();
-    console.log(params)
 
     const query = Database.table('attendances')
       .select(
@@ -28,7 +27,7 @@ class AttendanceReportController {
     }
 
     if(params.company_id) {
-      query.andWhere('companies.id', params.company_id)
+      query.whereIn('companies.id', params.company_id.split(','))
     }
 
     const response = await query;
