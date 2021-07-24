@@ -2,9 +2,8 @@
 
 const Helpers = use('Helpers')
 
-let csvToJson = require('convert-csv-to-json');
+let excelToJson = require('convert-excel-to-json');
 
-const Trainee = use('App/Models/Trainee')
 const Attendance = use('App/Models/Attendance')
 
 const groupBy = (key) => {
@@ -40,7 +39,7 @@ class AttendanceController {
       const file = request.file('file')
 
       await file.move(Helpers.tmpPath('uploads'), {
-        name: 'presencas-file.csv',
+        name: 'presencas-file.xlsx',
         overwrite: true
       })
 
@@ -48,15 +47,22 @@ class AttendanceController {
         return file.error()
       }
 
-      let json = csvToJson.fieldDelimiter(',').getJsonFromCsv(Helpers.tmpPath('/uploads/presencas-file.csv'));
+      //let json = csvToJson.fieldDelimiter(',').getJsonFromCsv(Helpers.tmpPath('/uploads/presencas-file.csv'));
 
-      const parseJSON = json.map(item => {
+      const json = excelToJson({
+        sourceFile: Helpers.tmpPath('/uploads/presencas-file.xlsx')
+      });
 
-        const values = Object.values(item)
+      const firstKey = Object.keys(json)[0].toString()
+
+
+      const parseJSON = json[firstKey].map(item => {
 
         return {
-          cpf: values[1].replace(/\D/g, ''),
-          date: new Date(values[4].replace(/"/g, '').substring(0, 10))
+          cpf: item['B'].toString().replace(/\D/g, ''),
+          date: (item['E'] === 'NULL' || item['E'] === null)
+            ? ''
+            : new Date(item['E'].toString().replace(/"/g, '').substring(0, 10))
         }
       })
 
@@ -76,16 +82,16 @@ class AttendanceController {
           cpf: ordenedItems[0].cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4"),
           date: ordenedItems[0].date,
         },
-        {
-          cpf: ordenedItems[0].cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4"),
-          date: ordenedItems[0].date,
-          type: params.type
-        });
+          {
+            cpf: ordenedItems[0].cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4"),
+            date: ordenedItems[0].date,
+            type: params.type
+          });
       });
 
     } catch (error) {
       return response
-        .status(error.status)
+        .status(error.message)
         .send(error)
     }
   }
