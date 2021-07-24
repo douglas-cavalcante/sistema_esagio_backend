@@ -4,6 +4,7 @@ const Helpers = use('Helpers')
 
 let excelToJson = require('convert-excel-to-json');
 
+
 const Attendance = use('App/Models/Attendance')
 
 const groupBy = (key) => {
@@ -47,8 +48,6 @@ class AttendanceController {
         return file.error()
       }
 
-      //let json = csvToJson.fieldDelimiter(',').getJsonFromCsv(Helpers.tmpPath('/uploads/presencas-file.csv'));
-
       const json = excelToJson({
         sourceFile: Helpers.tmpPath('/uploads/presencas-file.xlsx')
       });
@@ -58,8 +57,15 @@ class AttendanceController {
 
       const parseJSON = json[firstKey].map(item => {
 
+        const cpfLength = item['B'].toString().length;
+        let currentCpf = item['B'].toString();
+
+        for (let index = cpfLength; index < 11; index++) {
+          currentCpf = '0' + currentCpf;
+        }
+
         return {
-          cpf: item['B'].toString().replace(/\D/g, ''),
+          cpf: currentCpf,
           date: (item['E'] === 'NULL' || item['E'] === null)
             ? ''
             : new Date(item['E'].toString().replace(/"/g, '').substring(0, 10))
@@ -77,7 +83,6 @@ class AttendanceController {
       keys.forEach(async key => {
         const currentData = data[key];
         const ordenedItems = currentData.slice().sort((a, b) => b.date - a.date)
-        console.log(ordenedItems)
         await Attendance.findOrCreate({
           cpf: ordenedItems[0].cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4"),
           date: ordenedItems[0].date,
